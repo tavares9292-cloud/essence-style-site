@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Essence & Style | Boutique de Luxo</title>
+    
+    <!-- Script para o Login do Admin -->
+    </script>
+
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; color: #333; margin: 0; padding: 0; text-align: center; }
         header { background-color: #1a1a1a; color: #fff; padding: 40px 0; border-bottom: 5px solid #d4af37; }
@@ -11,9 +15,13 @@
         .container { max-width: 900px; margin: 30px auto; padding: 20px; }
         .categoria { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         h2 { color: #d4af37; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .item { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px dashed #ddd; }
+        
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px dashed #ddd; }
+        .info-produto { display: flex; align-items: center; text-align: left; }
+        .foto-preview { width: 50px; height: 50px; border-radius: 5px; object-fit: cover; margin-right: 15px; background: #eee; }
         .nome { font-weight: bold; font-size: 1.1em; }
-        .preco { color: #28a745; font-weight: bold; }
+        .preco { color: #28a745; font-weight: bold; min-width: 100px; text-align: right; }
+        
         footer { background: #1a1a1a; color: #fff; padding: 20px; font-size: 0.9em; margin-top: 50px; }
     </style>
 </head>
@@ -26,29 +34,74 @@
 
 <div class="container">
     <div class="categoria">
-        <h2>🧴 PERFUMES IMPORTADOS</h2>
-        <div class="item"><span class="nome">Invictus (100ml) - Paco Rabanne</span> <span class="preco">R$ 450,00</span></div>
-        <div class="item"><span class="nome">212 VIP Rose (80ml) - Carolina Herrera</span> <span class="preco">R$ 480,00</span></div>
-        <div class="item"><span class="nome">Sauvage Dior (100ml)</span> <span class="preco">R$ 520,00</span></div>
-    </div>
-
-    <div class="categoria">
-        <h2>👕 ROUPAS DE MARCA</h2>
-        <div class="item"><span class="nome">Camiseta Lacoste (Pima Cotton)</span> <span class="preco">R$ 220,00</span></div>
-        <div class="item"><span class="nome">Polo Tommy Hilfiger (Original)</span> <span class="preco">R$ 250,00</span></div>
-        <div class="item"><span class="nome">Calça Jeans Armani Exchange</span> <span class="preco">R$ 590,00</span></div>
-    </div>
-
-    <div class="categoria">
-        <h2>⌚ RELÓGIOS DE LUXO</h2>
-        <div class="item"><span class="nome">Invicta Pro Diver (Dourado)</span> <span class="preco">R$ 850,00</span></div>
-        <div class="item"><span class="nome">Casio Edifice (Prata)</span> <span class="preco">R$ 700,00</span></div>
+        <h2>💎 VITRINE DE PRODUTOS</h2>
+        <div id="lista-produtos">
+            <p>Buscando as melhores ofertas...</p>
+        </div>
     </div>
 </div>
 
 <footer>
     <p>&copy; 2024 Essence & Style - Atendimento Exclusivo via WhatsApp</p>
 </footer>
+
+<script>
+    async function carregarProdutos() {
+        const lista = document.getElementById('lista-produtos');
+        
+        // JÁ PREENCHI COM O SEU REPOSITÓRIO ABAIXO:
+        const meuRepo = "tavares9292-cloud/essence-style-site"; 
+
+        try {
+            // Busca a lista de arquivos na pasta 'site/produtos' (conforme seu config.yml)
+            const url = `https://api.github.com{meuRepo}/contents/site/produtos`;
+            const response = await fetch(url);
+            const arquivos = await response.json();
+
+            if (!arquivos || arquivos.length === 0 || arquivos.message === "Not Found") {
+                lista.innerHTML = "<p>Nenhum produto cadastrado. Vá em /admin e crie o primeiro!</p>";
+                return;
+            }
+
+            lista.innerHTML = ''; 
+
+            for (let arquivo of arquivos) {
+                if (arquivo.name.endsWith('.md')) {
+                    const res = await fetch(arquivo.download_url);
+                    const texto = await res.text();
+
+                    // Extrai Nome, Preço e Imagem do arquivo
+                    const titulo = texto.match(/title: "(.*)"/)?. || texto.match(/title: (.*)/)?.;
+                    const preco = texto.match(/price: "(.*)"/)?. || texto.match(/price: (.*)/)?.;
+                    const imagem = texto.match(/image: "(.*)"/)?. || texto.match(/image: (.*)/)?.;
+
+                    lista.innerHTML += `
+                        <div class="item">
+                            <div class="info-produto">
+                                <img src="${imagem || ''}" class="foto-preview" onerror="this.style.display='none'">
+                                <span class="nome">${titulo}</span>
+                            </div>
+                            <span class="preco">R$ ${preco}</span>
+                        </div>
+                    `;
+                }
+            }
+        } catch (erro) {
+            console.error("Erro ao carregar:", erro);
+            lista.innerHTML = "<p>Cadastre produtos no seu painel /admin para eles aparecerem aqui.</p>";
+        }
+    }
+
+    carregarProdutos();
+
+    if (window.netlifyIdentity) {
+        window.netlifyIdentity.on("init", user => {
+            if (!user) {
+                window.netlifyIdentity.on("login", () => { document.location.reload(); });
+            }
+        });
+    }
+</script>
 
 </body>
 </html>
